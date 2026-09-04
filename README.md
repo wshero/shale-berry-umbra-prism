@@ -70,10 +70,12 @@ npm run build       # 生产构建（输出 Vercel / Nitro 产物）
 2. **Add New → Project → Import**，选择仓库 `wshero/shale-berry-umbra-prism`。
 3. 保持默认即可：
    - Framework：Vite / Other
-   - Build Command：`npm run build`
+   - Build Command：`npm run build`（以仓库 `vercel.json` 为准）
    - 不需要填写 `DATABASE_URL` 等环境变量
 4. 点 **Deploy**。约 1–2 分钟后得到 `https://xxx.vercel.app`。
 5. 以后每次 `git push` 到 `main` 会自动再部署。
+
+**重要：** 不要让 Vercel 直接使用仓库里的旧 `.vercel/output`（那是早期「神东」演示的预构建产物）。本仓库已加 `vercel.json`，每次部署会先删掉旧产物再 `npm run build`。若线上仍是旧版：Vercel → Deployments → Redeploy，**不要勾选 Use existing Build Cache**，Node.js 选 **22.x**。
 
 若构建报 Node 版本：在 Vercel 项目 Settings → General 把 Node.js 设为 **22.x**。
 
