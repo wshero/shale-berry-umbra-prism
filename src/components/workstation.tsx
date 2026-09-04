@@ -43,7 +43,7 @@ export function Workstation() {
   const [advance, setAdvance] = useState(180);
   const [running, setRunning] = useState(false);
   const [hidden, setHidden] = useState<Record<string, boolean>>({});
-  const [showLabels, setShowLabels] = useState(false);
+  const [showLabels, setShowLabels] = useState(true);
   const [showFracture, setShowFracture] = useState(true);
   const [selected, setSelected] = useState(LAYERS[6].id);
   const [mounted, setMounted] = useState(false);
@@ -330,7 +330,7 @@ export function Workstation() {
             <p className="mt-2 flex items-center gap-3 text-[10px] text-muted-foreground">
               <span className="inline-flex items-center gap-1">
                 <i className="inline-block size-2 rounded-sm bg-danger/80" />
-                导裂带
+                导裂带 · 从煤层顶板往上
               </span>
               <span className="inline-flex items-center gap-1">
                 <i className="inline-block size-2 rounded-sm bg-danger/40" />
@@ -338,6 +338,35 @@ export function Workstation() {
               </span>
             </p>
           </div>
+          {showLabels ? (
+            <div className="pointer-events-none absolute top-28 left-3 z-10 w-[168px] rounded-lg border border-border bg-card/90 p-2">
+              <p className="mb-1.5 text-[10px] tracking-wide text-muted-foreground">
+                地层（剖面上已标注）
+              </p>
+              <div className="flex max-h-[42vh] flex-col overflow-hidden rounded-md">
+                {stacked.map((layer) => (
+                  <div
+                    key={layer.id}
+                    className="flex items-center gap-1.5 px-1.5 text-[10px] leading-tight"
+                    style={{
+                      flex: `${Math.max(layer.thickness, 5)} 1 0`,
+                      minHeight: 15,
+                      background: `${layer.color}2e`,
+                    }}
+                  >
+                    <span
+                      className="size-1.5 shrink-0 rounded-sm"
+                      style={{ background: layer.color }}
+                    />
+                    <span className="min-w-0 flex-1 truncate">{layer.name}</span>
+                    <span className="font-mono text-[9px] text-muted-foreground tabular-nums">
+                      {layer.thickness.toFixed(0)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
           <div className="pointer-events-auto absolute top-3 right-3 z-10 flex gap-2">
             <Toggle
               on={showFracture}
