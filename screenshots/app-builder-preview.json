@@ -1,0 +1,36 @@
+{
+  "url": "http://127.0.0.1:8080/",
+  "viewports": {
+    "desktop": {
+      "width": 1280,
+      "height": 800,
+      "status": 200,
+      "title": "导水裂隙带预测",
+      "hasCanvas": false,
+      "bodyTextLen": 727,
+      "bodyTextHash": "e709e82e228234779e2acd7aaca0b630bfcd024a7917a1e08908e7f807ea0fcf",
+      "bodyTextPrefix": "WCFZ · DUMMYSOLVER 导水裂隙带预测工作台 兖矿集团 · 演示煤矿 · 1306 综采工作面 运行 重置 地质 ",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview.png"
+    },
+    "mobile": {
+      "width": 390,
+      "height": 844,
+      "status": 200,
+      "title": "导水裂隙带预测",
+      "hasCanvas": false,
+      "bodyTextLen": 713,
+      "bodyTextHash": "ec3f4b4a6f6f92a0247c7bf4ea6e2c8e430dfbe4caac20804968b3fda3484b32",
+      "bodyTextPrefix": "WCFZ · DUMMYSOLVER 导水裂隙带预测工作台 运行 重置 地质 力学 工况 钻孔柱状 · 自上而下 · 点击查看参",
+      "horizontalOverflow": false,
+      "consoleErrors": [],
+      "pageErrors": [],
+      "screenshot": "/workspace/screenshots/app-builder-preview-mobile.png"
+    }
+  },
+  "brandWarnings": [],
+  "authWarnings": [],
+  "verdictFile": "/workspace/screenshots/app-builder-preview.json"
+}

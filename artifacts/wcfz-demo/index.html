@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>矿区导水裂隙带预测系统 · Demo</title>
+  <style>
+    :root {
+      --bg: #0b1220;
+      --panel: #121b2c;
+      --panel-2: #182338;
+      --line: #243049;
+      --text: #e8eef8;
+      --muted: #8ea0b8;
+      --accent: #3db8ff;
+      --good: #3dd68c;
+      --warn: #f5c542;
+      --bad: #ff6b6b;
+      --coal: #2a2a2a;
+      --sand: #c4a574;
+      --mud: #6b7c59;
+      --hard: #7d8b9a;
+      --soil: #b07a4a;
+      --aqua: #2f6f9f;
+      --frac: rgba(255, 107, 107, 0.45);
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; }
+    .app { display: grid; grid-template-rows: 56px 1fr 28px; height: 100%; }
+    header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 18px; border-bottom: 1px solid var(--line); background: #0e1626;
+    }
+    header h1 { font-size: 16px; font-weight: 600; letter-spacing: .02em; }
+    header h1 span { color: var(--accent); }
+    .badge { font-size: 11px; color: #9fd4ff; border: 1px solid #2b5d82; padding: 3px 8px; border-radius: 99px; }
+    .layout { display: grid; grid-template-columns: 280px 1fr 320px; min-height: 0; }
+    .col { border-right: 1px solid var(--line); overflow: auto; background: var(--panel); }
+    .col:last-child { border-right: none; }
+    .block { padding: 14px 16px; border-bottom: 1px solid var(--line); }
+    .block h2 { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; margin-bottom: 10px; }
+    label { display: block; font-size: 12px; color: var(--muted); margin: 8px 0 4px; }
+    input, select {
+      width: 100%; background: var(--panel-2); color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px; padding: 7px 8px; font-size: 13px;
+    }
+    .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .layers { display: flex; flex-direction: column-reverse; gap: 3px; }
+    .layer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 6px 8px; border-radius: 4px; font-size: 12px; color: #111;
+    }
+    .main { display: grid; grid-template-rows: auto 1fr 170px; min-height: 0; background: #0d1524; }
+    .toolbar { display: flex; align-items: center; gap: 12px; padding: 10px 16px; border-bottom: 1px solid var(--line); }
+    .toolbar button {
+      background: #1a2b44; color: var(--text); border: 1px solid #2c4566;
+      padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px;
+    }
+    .toolbar button.primary { background: #1b5f8a; border-color: #3db8ff; }
+    .toolbar .hint { color: var(--muted); font-size: 12px; margin-left: auto; }
+    .stage { position: relative; min-height: 0; }
+    canvas { width: 100%; height: 100%; display: block; }
+    .legend {
+      position: absolute; left: 12px; bottom: 12px; background: rgba(10,16,28,.82);
+      border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; font-size: 11px;
+    }
+    .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 6px; vertical-align: -1px; }
+    .charts { display: grid; grid-template-columns: 1.3fr 1fr; border-top: 1px solid var(--line); }
+    .chart-box { padding: 8px 12px; }
+    .chart-box h3 { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; }
+    th, td { text-align: left; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    th { color: var(--muted); font-weight: 500; }
+    .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .kpi .card { background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 10px; }
+    .kpi .n { font-size: 22px; font-weight: 700; }
+    .kpi .u { font-size: 12px; color: var(--muted); }
+    .risk { padding: 10px; border-radius: 8px; margin-top: 8px; font-size: 13px; }
+    .risk.g { background: #143326; color: var(--good); }
+    .risk.y { background: #3a3014; color: var(--warn); }
+    .risk.r { background: #3a1616; color: var(--bad); }
+    footer { display: flex; align-items: center; padding: 0 16px; font-size: 11px; color: var(--muted); border-top: 1px solid var(--line); }
+    .bar { height: 6px; background: #1c2a40; border-radius: 99px; overflow: hidden; margin-top: 6px; }
+    .bar > div { height: 100%; background: linear-gradient(90deg, #3db8ff, #7cf); width: 0%; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <header>
+      <h1>矿区导水裂隙带 <span>精准数值模拟系统</span> · 前端演示</h1>
+      <div class="badge">DummySolver · 不调用真实求解器</div>
+    </header>
+    <div class="layout">
+      <aside class="col">
+        <div class="block">
+          <h2>工作面工况</h2>
+          <label>矿井 / 工作面</label>
+          <input value="演示矿 · 8301 工作面" readonly />
+          <div class="row2">
+            <div><label>采高 M (m)</label><input id="miningHeight" type="number" value="6.5" step="0.1" /></div>
+            <div><label>面长 (m)</label><input id="faceLen" type="number" value="220" /></div>
+          </div>
+          <div class="row2">
+            <div><label>埋深 (m)</label><input id="depth" type="number" value="420" /></div>
+            <div><label>岩性类别</label>
+              <select id="litho">
+                <option value="medium" selected>中硬</option>
+                <option value="hard">坚硬</option>
+                <option value="soft">软弱</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        <div class="block">
+          <h2>简化钻孔柱状（自上而下）</h2>
+          <div class="layers" id="layers"></div>
+        </div>
+        <div class="block">
+          <h2>含水层</h2>
+          <p style="font-size:13px;color:var(--muted);line-height:1.5">
+            砂岩含水层底界距煤层顶板 <b style="color:#9fd4ff" id="aquaDist">95 m</b>。
+            系统用导高与该距离比较，判断通道风险。
+          </p>
+        </div>
+      </aside>
+
+      <section class="main">
+        <div class="toolbar">
+          <button class="primary" id="btnRun">运行模拟</button>
+          <button id="btnReset">重置</button>
+          <label style="margin:0;display:flex;align-items:center;gap:8px;color:var(--muted)">
+            推进
+            <input id="advance" type="range" min="0" max="400" value="0" style="width:220px" />
+            <b id="advLabel" style="color:var(--text)">0 m</b>
+          </label>
+          <div class="hint">拖动滑条查看裂隙带：增高 → 缓增 → 稳定成马鞍形</div>
+        </div>
+        <div class="stage">
+          <canvas id="cv"></canvas>
+          <div class="legend">
+            <div><i style="background:#b07a4a"></i>松散层 / 红土</div>
+            <div><i style="background:#2f6f9f"></i>砂岩含水层</div>
+            <div><i style="background:#6b7c59"></i>泥岩隔水层</div>
+            <div><i style="background:#7d8b9a"></i>中砂岩（关键层）</div>
+            <div><i style="background:#2a2a2a"></i>煤层</div>
+            <div><i style="background:#ff6b6b"></i>导水裂隙带（破坏区）</div>
+          </div>
+        </div>
+        <div class="charts">
+          <div class="chart-box">
+            <h3>导高随推进演化 Hf(x)</h3>
+            <canvas id="curve" height="120"></canvas>
+          </div>
+          <div class="chart-box">
+            <h3>三种方法对照（当前步）</h3>
+            <table>
+              <thead><tr><th>方法</th><th>导高</th><th>裂采比</th></tr></thead>
+              <tbody id="cmp"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <aside class="col">
+        <div class="block">
+          <h2>预测结果</h2>
+          <div class="kpi">
+            <div class="card"><div class="u">数值模拟导高</div><div class="n" id="hfSim">—</div><div class="u">m</div></div>
+            <div class="card"><div class="u">安全岩柱</div><div class="n" id="pillar">—</div><div class="u">m</div></div>
+          </div>
+          <div id="risk" class="risk g">等待运行</div>
+          <div class="bar"><div id="prog"></div></div>
+        </div>
+        <div class="block">
+          <h2>运行逻辑（本 Demo）</h2>
+          <ol style="font-size:12px;color:var(--muted);line-height:1.7;padding-left:16px">
+            <li>读取柱状与采高，生成层状剖面</li>
+            <li>L0 用规程经验公式给出基线</li>
+            <li>L1 按关键层位置（约 7–10 倍采高）判断上界</li>
+            <li>L2 DummySolver 按推进生成破坏区</li>
+            <li>连通破坏区顶界 = 导高，与含水层求距离</li>
+          </ol>
+        </div>
+        <div class="block">
+          <h2>形态识别</h2>
+          <p id="shape" style="font-size:13px;color:var(--text)">尚未充分采动</p>
+        </div>
+      </aside>
+    </div>
+    <footer>前端演示 · 数据为示意，不代表真实矿井计算结果 · 架构对应 Scenario / Run / DummySolver / 后处理规则</footer>
+  </div>
+  <script>
+    const LAYERS = [
+      { name: "松散层", h: 28, color: "#b07a4a" },
+      { name: "红土隔水层", h: 18, color: "#8a5a32" },
+      { name: "砂岩含水层", h: 22, color: "#2f6f9f", aquifer: true },
+      { name: "泥岩", h: 20, color: "#6b7c59" },
+      { name: "中砂岩·关键层", h: 16, color: "#7d8b9a", key: true },
+      { name: "砂泥互层", h: 24, color: "#5d6b4e" },
+      { name: "细砂岩", h: 15, color: "#9aa7b5" },
+      { name: "煤层", h: 6.5, color: "#2a2a2a", coal: true },
+      { name: "底板泥岩", h: 12, color: "#4a5340" }
+    ];
+
+    const layersEl = document.getElementById("layers");
+    LAYERS.forEach(l => {
+      const d = document.createElement("div");
+      d.className = "layer";
+      d.style.background = l.color;
+      d.style.color = l.coal ? "#eee" : "#111";
+      d.innerHTML = `<span>${l.name}${l.key ? " ★" : ""}${l.aquifer ? " 水" : ""}</span><span>${l.h} m</span>`;
+      layersEl.appendChild(d);
+    });
+
+    const aquaFromCoal = (() => {
+      let s = 0;
+      for (let i = LAYERS.length - 1; i >= 0; i--) {
+        if (LAYERS[i].coal) continue;
+        if (LAYERS[i].aquifer) return s;
+        s += LAYERS[i].h;
+      }
+      return s;
+    })();
+    document.getElementById("aquaDist").textContent = aquaFromCoal.toFixed(0) + " m";
+
+    function empiricalHf(M, kind) {
+      if (kind === "hard") return 100 * M / (0.15 * M + 3.12);
+      if (kind === "soft") return 100 * M / (0.31 * M + 8.81);
+      return 100 * M / (1.6 * M + 3.6);
+    }
+    function keyStrataHf(M) {
+      const crit = 8.5 * M;
+      let acc = 0;
+      for (let i = LAYERS.length - 1; i >= 0; i--) {
+        const l = LAYERS[i];
+        if (l.coal) continue;
+        acc += l.h;
+        if (l.key && acc > crit) return acc - l.h;
+      }
+      return Math.min(acc, crit + 16);
+    }
+
+    function dummyHf(advance, M) {
+      const Hmax = 11.2 * M;
+      const grow = 1 - Math.exp(-advance / 90);
+      let h = Hmax * Math.min(1, grow);
+      if (advance > 260) h = Hmax * 0.98;
+      return h;
+    }
+    function saddleScale(xNorm, advance) {
+      if (advance < 80) return Math.exp(-Math.pow((xNorm - 0.5) * 2.2, 2));
+      const edge = 0.22 + 0.08 * Math.min(1, advance / 300);
+      const d = Math.min(Math.abs(xNorm - edge), Math.abs(xNorm - (1 - edge)));
+      return 0.72 + 0.28 * Math.exp(-Math.pow(d * 6, 2));
+    }
+
+    const cv = document.getElementById("cv");
+    const ctx = cv.getContext("2d");
+    const curve = document.getElementById("curve");
+    const cctx = curve.getContext("2d");
+
+    function resize() {
+      const r = cv.parentElement.getBoundingClientRect();
+      cv.width = r.width * devicePixelRatio;
+      cv.height = r.height * devicePixelRatio;
+      ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      curve.width = curve.parentElement.clientWidth * devicePixelRatio;
+      curve.height = 120 * devicePixelRatio;
+      cctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+      draw();
+    }
+    window.addEventListener("resize", resize);
+
+    let running = false;
+    let advance = 0;
+    const maxAdv = 400;
+
+    function drawSection() {
+      const w = cv.width / devicePixelRatio, h = cv.height / devicePixelRatio;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = "#0d1524";
+      ctx.fillRect(0, 0, w, h);
+
+      const padL = 70, padR = 24, padT = 18, padB = 36;
+      const plotW = w - padL - padR, plotH = h - padT - padB;
+      const totalH = LAYERS.reduce((s, l) => s + l.h, 0);
+      const M = parseFloat(document.getElementById("miningHeight").value) || 6.5;
+      const face = Math.min(plotW * 0.72, 20 + advance * 1.15);
+      const goafX0 = padL + 40;
+      const scaleY = plotH / totalH;
+
+      let y = padT;
+      const tops = [];
+      for (const l of LAYERS) {
+        const lh = l.h * scaleY;
+        ctx.fillStyle = l.color;
+        ctx.fillRect(padL, y, plotW, lh);
+        ctx.fillStyle = "rgba(0,0,0,.15)";
+        ctx.fillRect(padL, y + lh - 1, plotW, 1);
+        ctx.fillStyle = l.coal ? "#ddd" : "rgba(0,0,0,.45)";
+        ctx.font = "11px sans-serif";
+        ctx.fillText(l.name, padL + 8, y + Math.min(14, lh - 2));
+        tops.push({ y, lh, l });
+        y += lh;
+      }
+
+      const coal = tops.find(t => t.l.coal);
+      const roofY = coal.y;
+      const hf = dummyHf(advance, M);
+      const hfPx = hf * scaleY;
+
+      if (advance > 5) {
+        ctx.beginPath();
+        const steps = 48;
+        for (let i = 0; i <= steps; i++) {
+          const t = i / steps;
+          const x = goafX0 + face * t;
+          const s = saddleScale(t, advance);
+          const yy = roofY - hfPx * s;
+          i === 0 ? ctx.moveTo(x, roofY) : ctx.lineTo(x, yy);
+        }
+        ctx.lineTo(goafX0 + face, roofY);
+        ctx.closePath();
+        const g = ctx.createLinearGradient(0, roofY - hfPx, 0, roofY);
+        g.addColorStop(0, "rgba(255,107,107,0.15)");
+        g.addColorStop(1, "rgba(255,107,107,0.55)");
+        ctx.fillStyle = g;
+        ctx.fill();
+        ctx.strokeStyle = "#ff8a8a";
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+      }
+
+      ctx.fillStyle = "#111";
+      ctx.fillRect(goafX0, roofY, face, coal.lh * Math.min(1, advance / 30 || 0.2));
+      ctx.strokeStyle = "#f5c542";
+      ctx.setLineDash([4, 3]);
+      ctx.strokeRect(goafX0, roofY, face, coal.lh);
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#f5c542";
+      ctx.font = "11px sans-serif";
+      ctx.fillText("采空区 / 工作面推进 " + advance.toFixed(0) + " m", goafX0, h - 14);
+
+      const aqua = tops.find(t => t.l.aquifer);
+      ctx.strokeStyle = "#7ec8ff";
+      ctx.setLineDash([6, 4]);
+      ctx.beginPath();
+      ctx.moveTo(padL, aqua.y + aqua.lh);
+      ctx.lineTo(padL + plotW, aqua.y + aqua.lh);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle = "#7ec8ff";
+      ctx.fillText("含水层底界", padL + plotW - 78, aqua.y + aqua.lh - 4);
+
+      ctx.fillStyle = "#8ea0b8";
+      ctx.font = "10px sans-serif";
+      ctx.fillText("地表 ↑", padL - 52, padT + 10);
+      ctx.fillText("煤层", padL - 52, roofY + 12);
+    }
+
+    function drawCurve() {
+      const w = curve.width / devicePixelRatio, h = curve.height / devicePixelRatio;
+      cctx.clearRect(0, 0, w, h);
+      const M = parseFloat(document.getElementById("miningHeight").value) || 6.5;
+      const litho = document.getElementById("litho").value;
+      const L0 = empiricalHf(M, litho);
+      const L1 = keyStrataHf(M);
+      cctx.strokeStyle = "#243049";
+      cctx.strokeRect(36, 8, w - 44, h - 28);
+      const maxH = Math.max(L0, L1, 12 * M) * 1.15;
+      cctx.strokeStyle = "#3db8ff";
+      cctx.beginPath();
+      for (let a = 0; a <= maxAdv; a += 4) {
+        const x = 36 + (w - 44) * a / maxAdv;
+        const y = 8 + (h - 28) * (1 - dummyHf(a, M) / maxH);
+        a === 0 ? cctx.moveTo(x, y) : cctx.lineTo(x, y);
+      }
+      cctx.stroke();
+      const ax = 36 + (w - 44) * advance / maxAdv;
+      const ay = 8 + (h - 28) * (1 - dummyHf(advance, M) / maxH);
+      cctx.fillStyle = "#fff";
+      cctx.beginPath(); cctx.arc(ax, ay, 3, 0, 6.28); cctx.fill();
+      cctx.fillStyle = "#8ea0b8";
+      cctx.font = "10px sans-serif";
+      cctx.fillText("0", 36, h - 4);
+      cctx.fillText(maxAdv + " m", w - 40, h - 4);
+      cctx.fillText(maxH.toFixed(0) + " m", 2, 16);
+    }
+
+    function updatePanels() {
+      const M = parseFloat(document.getElementById("miningHeight").value) || 6.5;
+      const litho = document.getElementById("litho").value;
+      const L0 = empiricalHf(M, litho);
+      const L1 = keyStrataHf(M);
+      const L2 = dummyHf(advance, M);
+      const pillar = aquaFromCoal - L2;
+      document.getElementById("hfSim").textContent = advance < 8 ? "—" : L2.toFixed(1);
+      document.getElementById("pillar").textContent = advance < 8 ? "—" : pillar.toFixed(1);
+      document.getElementById("cmp").innerHTML = `
+        <tr><td>L0 规程公式</td><td>${L0.toFixed(1)} m</td><td>${(L0 / M).toFixed(2)}</td></tr>
+        <tr><td>L1 关键层位置</td><td>${L1.toFixed(1)} m</td><td>${(L1 / M).toFixed(2)}</td></tr>
+        <tr><td>L2 Dummy 模拟</td><td>${L2.toFixed(1)} m</td><td>${(L2 / M).toFixed(2)}</td></tr>`;
+      const risk = document.getElementById("risk");
+      if (advance < 8) {
+        risk.className = "risk g"; risk.textContent = "未开挖：无通道风险";
+      } else if (pillar > 20) {
+        risk.className = "risk g"; risk.textContent = "未沟通 · 安全岩柱充足（>" + pillar.toFixed(0) + " m）";
+      } else if (pillar > 0) {
+        risk.className = "risk y"; risk.textContent = "接近沟通 · 岩柱仅 " + pillar.toFixed(1) + " m，需复核防水煤岩柱";
+      } else {
+        risk.className = "risk r"; risk.textContent = "通道可能形成 · 导高已进入含水层影响范围";
+      }
+      document.getElementById("shape").textContent =
+        advance < 80 ? "拱形发育（增长阶段）" :
+        advance < 220 ? "向马鞍过渡（缓增）" :
+        "马鞍形稳定（充分采动，高度基本不再上升）";
+      document.getElementById("prog").style.width = (100 * advance / maxAdv) + "%";
+    }
+
+    function draw() {
+      drawSection();
+      drawCurve();
+      updatePanels();
+    }
+
+    document.getElementById("advance").addEventListener("input", e => {
+      advance = Number(e.target.value);
+      document.getElementById("advLabel").textContent = advance + " m";
+      draw();
+    });
+    ["miningHeight", "litho"].forEach(id => {
+      document.getElementById(id).addEventListener("input", draw);
+      document.getElementById(id).addEventListener("change", draw);
+    });
+
+    document.getElementById("btnRun").onclick = async () => {
+      if (running) return;
+      running = true;
+      for (let a = 0; a <= maxAdv; a += 8) {
+        advance = a;
+        document.getElementById("advance").value = a;
+        document.getElementById("advLabel").textContent = a + " m";
+        draw();
+        await new Promise(r => setTimeout(r, 28));
+      }
+      running = false;
+    };
+    document.getElementById("btnReset").onclick = () => {
+      advance = 0;
+      document.getElementById("advance").value = 0;
+      document.getElementById("advLabel").textContent = "0 m";
+      draw();
+    };
+
+    resize();
+  </script>
+</body>
+</html>
